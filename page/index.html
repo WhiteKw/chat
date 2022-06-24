@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1, maximum-scale=1">
+    <meta name="theme-color" content="#383839">
+    <title>Document</title>
+    <script src="https://kit.fontawesome.com/def66b134a.js" crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            background: #383839;
+        }
+
+        .wrap {
+            display: grid;
+            grid-template-rows: 50px calc(100vh - 100px) 50px;
+            width: 100%;
+        }
+        
+        .chat-head {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 10px;
+            background: #383839;
+        }
+
+        .chat-head .title {
+            font-size: 20px;
+            color: #fff;
+        }
+
+        .chat-body {
+            height: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
+            overflow-y: scroll;
+            background: #262627;
+        }
+
+        .chat-body .chat {
+            width: fit-content;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .chat-body .chat .name {
+            width: fit-content;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #dfdfdf;
+        }
+
+        .chat-body .chat .msg {
+            width: fit-content;
+            padding: 15px;
+            border-radius: 0 10px 10px 10px;
+            font-size: 15px;
+            color: #fff;
+            background: #3a3a3b;
+        }
+
+        .chat-footer {
+            display: grid;
+            align-items: center;
+            grid-template-columns: 1fr 40px;
+            width: 100%;
+            height: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
+            background: #383839;
+        }
+
+        .chat-footer .input-wrap > * {
+            height: 35px;
+        }
+
+        .chat-footer input {
+            border: none;
+            color: #fff;
+            background: transparent;
+        }
+
+        .chat-footer input:focus {
+            outline: none;
+        }
+
+        .chat-footer .send-btn {
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 40px;
+            font-size: 12px;
+            background: #dfdfdf;
+        }
+
+        .blur {
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .blur .blur-txt {
+            color: #fff;
+        }
+
+        .blur .blur-btn {
+            width: fit-content;
+            height: 40px;
+            margin-top: 20px;
+            padding: 0 10px;
+            line-height: 40px;
+            border: 1px solid #fff;
+            border-radius: 40px;
+            color: #fff;
+        }
+
+        .blur.on {
+            display: flex;
+        }
+
+        .notice .msg {
+            color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="chat-head">
+            <div class="title">Chat.JS</div>
+        </div>
+        <div class="chat-body"></div>
+        <div class="chat-footer">
+            <input type="text" placeholder="텍스트를 입력하세요."/>
+            <div class="send-btn">전송</div>
+        </div>
+    </div>
+    <div class="blur">
+        <div class="blur-txt">서버와 연결이 끊어졌습니다.</div>
+        <div class="blur-btn">재연결</div>
+    </div>
+</body>
+<script>
+    let nickname;
+
+    while(true) {
+        nickname = prompt("이름을 입력하세요.");
+
+        if (nickname === '') {
+            alert('이름 입력을 입력해야 접속할 수 있습니다.')
+        } else if (nickname === 'System') {
+            alert('사용할 수 없는 이름입니다.');
+        } else {
+            break;
+        }
+    }
+
+    const ws = new WebSocket('ws://bkwchat.duckdns.org:3000');
+
+    const browserHeight = window.innerHeight;
+    const inputTag = document.querySelector('input');
+
+    function sendMessage() {
+        if (inputTag.value === '') return;
+        const text = nickname + '::msgSplit::' + inputTag.value;
+        inputTag.value = '';
+        ws.send(text);
+    }
+
+    inputTag.addEventListener('click', (event) => {
+        event.preventDefault();
+        document.querySelector('body');
+    });
+
+    inputTag.addEventListener('keydown', (e) => {
+        if (e.keyCode === 13) {
+            sendMessage();
+        }
+    })
+
+    const sendBtn = document.querySelector('.send-btn');
+    sendBtn.addEventListener('click', sendMessage);
+
+    ws.onmessage = (event) => {
+        const chat = document.createElement('div');
+        chat.classList.add('chat')
+
+        const name = document.createElement('div');
+        name.classList.add('name');
+
+        const msg = document.createElement('div');
+        msg.classList.add('msg');
+
+        let message = event.data.split('::msgSplit::');
+        tnName = document.createTextNode(message[0]);
+        tnMsg = document.createTextNode(message[1]);
+        name.appendChild(tnName);
+        msg.appendChild(tnMsg);
+        chat.appendChild(name);
+        chat.appendChild(msg);
+
+        if (message[0] === 'System') {
+            chat.classList.add('notice');
+        }
+
+        const chatBody = document.querySelector('.chat-body');
+        chatBody.appendChild(chat);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    ws.onclose = () => {
+        document.querySelector('.blur').classList.add('on')
+    }
+</script>
+</html>
